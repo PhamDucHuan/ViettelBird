@@ -3,9 +3,9 @@
 public class ObstacleSpawner : MonoBehaviour
 {
     public GameObject obstaclePrefab;
-    public float heightRange = 2.5f;
-    public float baseSpawnRate = 1.8f;    // <-- ĐIỀU CHỈNH KHOẢNG CÁCH GẦN/XA Ở ĐÂY
-    public float minSpawnRate = 0.5f;
+    [SerializeField] private float heightRange = 2.5f;
+    [SerializeField] private float baseSpawnRate = 1.8f;    // <-- ĐIỀU CHỈNH KHOẢNG CÁCH GẦN/XA Ở ĐÂY
+    [SerializeField] private float minSpawnRate = 0.5f;
 
     private float currentSpawnRateValue;
     private float spawnTimer; // Bộ đếm thời gian của chúng ta
