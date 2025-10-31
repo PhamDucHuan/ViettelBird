@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using UnityEngine.UI; // Vẫn cần nếu bạn dùng Button truyền thống, nhưng TMProUGUI thì không
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using TMPro; // Rất tốt khi sử dụng TextMeshPro
+using TMPro;
 using System.Collections;
 // Không cần using System.Collections.Generic; nữa
 
@@ -10,25 +10,27 @@ public class GameManager : MonoBehaviour
     public static GameManager instance;
 
     public bool isGameOver = false;
-    private bool isPaused = false; // <-- THÊM: Biến kiểm soát trạng thái tạm dừng
+    private bool isPaused = false; // <-- THÊM MỚI: Biến kiểm soát trạng thái tạm dừng
 
-    [Header("UI Elements")]
+    [Header("UI Elements")] // <-- THÊM MỚI: Header cho dễ nhìn
     [SerializeField] private TextMeshProUGUI scoreText;
-    [SerializeField] private TextMeshProUGUI hightScoreText; // Đổi tên thành highScoreText cho nhất quán
+    [SerializeField] private TextMeshProUGUI hightScoreText; // (Bạn có thể dùng cái này cho kỷ lục ở màn hình chính)
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private GameObject startMessagePanel;
-    [SerializeField] private GameObject pausePanel; // <-- THÊM: Panel tạm dừng
+    [SerializeField] private GameObject pausePanel; // <-- THÊM MỚI: Panel cho màn hình Pause
 
-    [Header("Game Speed")]
-    [SerializeField] private ObstacleSpawner spawner; // Đổi thứ tự cho logic
+    [Header("Game Over UI")] // <-- THÊM MỚI: Header cho dễ nhìn
+    [SerializeField] private TextMeshProUGUI finalScoreText_GameOver; // <-- THÊM MỚI: Text điểm cuối trên Panel
+    [SerializeField] private TextMeshProUGUI recordScoreText_GameOver; // <-- THÊM MỚI: Text kỷ lục trên Panel
+
+    [Header("Game Logic")] // <-- THÊM MỚI: Header cho dễ nhìn
+    [SerializeField] private ObstacleSpawner spawner;
     public float initialMoveSpeed = 3f;
     [SerializeField] private float speedIncreaseAmount = 0.5f;
     [SerializeField] private int scoreToIncreaseSpeed = 10;
+    [SerializeField] private ScoreData scoreData;
 
-    [Header("Score Data")] // Tạo Header cho dễ quản lý trong Inspector
-    [SerializeField] private ScoreData scoreData; // Biến này để lưu điểm cao
-
-    [HideInInspector] public float currentMoveSpeed; // Biến này là tốc độ CHÍNH của game
+    [HideInInspector] public float currentMoveSpeed;
 
     void Awake()
     {
@@ -41,64 +43,60 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        Time.timeScale = 1f; // Đảm bảo game chạy bình thường khi khởi động
-        currentMoveSpeed = initialMoveSpeed; // Khởi tạo tốc độ ban đầu
+        Time.timeScale = 1f;
+        currentMoveSpeed = initialMoveSpeed;
     }
 
     void Start()
     {
         isGameOver = false;
-        isPaused = false; // Đảm bảo game không bị tạm dừng khi khởi tạo
+        isPaused = false; // <-- THÊM MỚI
+        scoreData.score = 0;
+        scoreText.text = "0";
+        hightScoreText.text = "Kỷ lục: " + scoreData.highScore.ToString();
 
-        scoreData.score = 0; // Reset điểm hiện tại
-        scoreText.text = "0"; // Cập nhật UI điểm hiện tại
+        gameOverPanel.SetActive(false);
+        startMessagePanel.SetActive(true);
+        pausePanel.SetActive(false); // <-- THÊM MỚI: Đảm bảo Panel Pause tắt khi bắt đầu
 
-        // Đọc High Score từ ScoreData (đã được PlayerPrefs tải khi ScoreData được tạo)
-        hightScoreText.text = "HIGH SCORE: " + scoreData.highScore.ToString();
-
-        gameOverPanel.SetActive(false); // Ẩn màn hình Game Over
-        startMessagePanel.SetActive(true); // Hiển thị màn hình "Chạm để bắt đầu"
-        pausePanel.SetActive(false); // <-- THÊM: Ẩn Pause Panel khi game bắt đầu
-
-        spawner.UpdateSpawnRate(currentMoveSpeed); // Cập nhật tốc độ spawn ban đầu cho spawner
+        spawner.UpdateSpawnRate(currentMoveSpeed);
         Debug.Log("GameManager Started. Initial Speed: " + currentMoveSpeed);
     }
 
     public void StartGame()
     {
-        if (isGameOver) return; // Không bắt đầu lại nếu đã Game Over
+        if (isGameOver) return;
 
-        startMessagePanel.SetActive(false); // Ẩn màn hình "Chạm để bắt đầu"
-        spawner.StartSpawning(); // Bắt đầu spawn chướng ngại vật
+        startMessagePanel.SetActive(false);
+        spawner.StartSpawning();
         Debug.Log("Game started from Player's first touch.");
     }
 
     public void AddScore()
     {
-        if (isGameOver || isPaused) return; // Không cộng điểm nếu game over hoặc tạm dừng
+        if (isGameOver || isPaused) return; // <-- CẬP NHẬT: Không cộng điểm khi pause
 
         scoreData.score++;
         scoreText.text = scoreData.score.ToString();
-        Debug.Log("Score: " + scoreData.score);
+        // Debug.Log("Score: " + scoreData.score); // Bỏ comment nếu cần
 
         if (scoreData.score % scoreToIncreaseSpeed == 0 && scoreData.score != 0)
         {
             IncreaseGameSpeed();
         }
 
-        // Gọi CheckHighScore ngay lập tức, không cần Coroutine nữa vì scoreData đã cập nhật ngay
+        // Sửa lại: Không cần Coroutine, gọi trực tiếp sẽ tốt hơn
         CheckHighScore();
     }
 
-    private void CheckHighScore() // <-- SỬA: Không cần IEnumerator và WaitForSeconds
+    private void CheckHighScore() // <-- CẬP NHẬT: Bỏ Coroutine
     {
         if (scoreData.score > scoreData.highScore)
         {
             scoreData.highScore = scoreData.score;
-            hightScoreText.text = "HIGH SCORE: " + scoreData.highScore.ToString();
+            hightScoreText.text = "Kỷ lục: " + scoreData.highScore.ToString();
             Debug.Log("New High Score: " + scoreData.highScore);
-            // Lưu High Score vào PlayerPrefs NGAY LẬP TỨC qua ScoreData
-            scoreData.SaveHighScore();
+            // (Giả sử ScoreData của bạn tự động lưu khi set highScore mới)
         }
     }
 
@@ -109,10 +107,57 @@ public class GameManager : MonoBehaviour
         spawner.UpdateSpawnRate(currentMoveSpeed);
     }
 
-    // <-- THÊM: Chức năng tạm dừng/tiếp tục
+    // --- CẬP NHẬT HÀM GAMEOVER ---
+    public void GameOver()
+    {
+        if (isGameOver) return;
+
+        isGameOver = true;
+        spawner.StopSpawning();
+        Time.timeScale = 0f; // Dừng game
+        Debug.Log("Game Over! Final Score: " + scoreData.score);
+
+        // Cập nhật điểm số và kỷ lục cho 2 Text mới trên Panel Game Over
+        if (finalScoreText_GameOver != null)
+        {
+            finalScoreText_GameOver.text = "ĐIỂM: " + scoreData.score.ToString();
+        }
+        if (recordScoreText_GameOver != null)
+        {
+            // Đảm bảo scoreData.highScore đã được cập nhật lần cuối
+            CheckHighScore();
+            recordScoreText_GameOver.text = "KỶ LỤC: " + scoreData.highScore.ToString();
+        }
+
+        gameOverPanel.SetActive(true); // Bật Panel Game Over
+        pausePanel.SetActive(false); // Đảm bảo Panel Pause tắt
+    }
+
+    // --- CÁC HÀM THÊM MỚI ---
+
+    public void RestartGame()
+    {
+        Debug.Log("Restarting Game...");
+        Time.timeScale = 1f; // Phải set Time.timeScale = 1 TRƯỚC KHI tải lại Scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitGame()
+    {
+        Debug.Log("Quit Game button pressed.");
+#if UNITY_EDITOR
+        // Dừng game trong Unity Editor
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+            // Thoát ứng dụng khi đã build
+            Application.Quit();
+#endif
+    }
+
     public void TogglePause()
     {
-        if (isGameOver) return; // Không cho tạm dừng nếu game đã kết thúc
+        // Không cho tạm dừng nếu game đã kết thúc
+        if (isGameOver) return;
 
         isPaused = !isPaused; // Đảo ngược trạng thái tạm dừng
 
@@ -128,38 +173,5 @@ public class GameManager : MonoBehaviour
             pausePanel.SetActive(false); // Ẩn PausePanel
             Debug.Log("Game Resumed.");
         }
-    }
-
-    public void GameOver()
-    {
-        if (isGameOver) return; // Đảm bảo chỉ gọi 1 lần
-
-        isGameOver = true;
-        spawner.StopSpawning(); // Dừng spawn chướng ngại vật
-        Time.timeScale = 0f; // Dừng game hoàn toàn
-        Debug.Log("Game Over! Final Score: " + scoreData.score);
-
-        // Hiển thị điểm cao nhất lên UI (đã cập nhật nếu có)
-        hightScoreText.text = "HIGH SCORE: " + scoreData.highScore.ToString();
-
-        gameOverPanel.SetActive(true); // Hiển thị màn hình Game Over
-        pausePanel.SetActive(false); // <-- Đảm bảo PausePanel tắt khi game over
-    }
-
-    public void RestartGame()
-    {
-        Debug.Log("Restarting Game...");
-        Time.timeScale = 1f; // Đảm bảo game chạy lại bình thường trước khi tải Scene
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name); // Tải lại Scene hiện tại
-    }
-
-    public void QuitGame()
-    {
-        Debug.Log("Quit Game button pressed.");
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false; // Dừng trong Unity Editor
-#else
-            Application.Quit(); // Thoát ứng dụng khi đã build
-#endif
     }
 }
