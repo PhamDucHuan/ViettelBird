@@ -2,7 +2,7 @@
 
 public class PlayerController : MonoBehaviour
 {
-    public float jumpForce = 5f;
+    [SerializeField] private float jumpForce = 5f;
     private Rigidbody2D rb;
     private bool gameStarted = false;
 
